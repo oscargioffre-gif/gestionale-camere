@@ -1,3 +1,4 @@
 id,hotel,camera,tipo_camera,uso,check_in,check_out,tipo_cliente,intestatario,telefono,email,prezzo_notte,prezzo_standard,deroga,note,creato_il
 9049a776,STRUTTURA 2,1,doppia,Doppia,2026-07-06,2026-07-07,Privato,oscar,,,80.0,80.0,False,,2026-07-08T19:42:50
 70aa2832,STRUTTURA 1,13,doppia,Singola,2026-07-06,2026-08-28,Privato,monica,,,50.0,50.0,False,,2026-07-08T19:43:43
+8c52aad4,STRUTTURA 1,17,tripla,Tripla,2026-07-06,2026-07-07,Privato,Pippo pluto,,,115.0,110.0,True,,2026-07-08T20:28:52
