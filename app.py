@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-ROSSI HOTEL'S — Gestionale prenotazioni per tre strutture (template white-label).
+TUO NOME HOTEL / B&B — Gestionale prenotazioni per tre strutture (template white-label).
 
 Singola pagina scorrevole, ottimizzata per smartphone (in particolare iPhone),
 con vista settimanale a griglia, inserimento prenotazioni, listino con deroghe
@@ -33,7 +33,7 @@ _page_icon = ICON_PATH if os.path.exists(ICON_PATH) else "🏨"
 # "centered" è la scelta migliore per il mobile: limita la larghezza dei
 # contenuti rendendoli pieni-schermo su iPhone ed eleganti su desktop.
 st.set_page_config(
-    page_title="ROSSI HOTEL'S",
+    page_title="TUO NOME HOTEL / B&B",
     page_icon=_page_icon,
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -109,8 +109,13 @@ DATA_FILE = os.path.join(DATA_DIR, "prenotazioni.csv")
 # Percorso del file dentro il repository GitHub (archivio permanente).
 GH_PATH = "data/prenotazioni.csv"
 
-# Password di accesso: NON è nel codice. Va impostata nei Secrets di Streamlit
-# (chiave "password") oppure nella variabile d'ambiente APP_PASSWORD in locale.
+# Password di accesso.
+# In produzione va impostata nei Secrets di Streamlit (chiave "password") oppure
+# nella variabile d'ambiente APP_PASSWORD in locale: quei valori hanno la
+# PRECEDENZA. Se non è configurato nulla, vale la password DEMO qui sotto, così
+# l'app è subito provabile appena deployata. IMPORTANTE: prima di consegnare
+# l'app a un cliente, imposta una password vera nei Secrets (vedi README).
+DEFAULT_PASSWORD = "prova"   # password demo iniziale (sovrascrivibile dai Secrets)
 
 # Colonne del CSV / dei record prenotazione.
 COLONNE = [
@@ -696,7 +701,7 @@ def init_stato():
 def sezione_testata():
     st.markdown(
         '<div class="app-header">'
-        '<h1>ROSSI <span class="acc">HOTEL\'S</span></h1>'
+        '<h1>TUO NOME <span class="acc">HOTEL / B&amp;B</span></h1>'
         '<div class="rule"></div>'
         '<div class="pedice">STRUTTURA 1 · STRUTTURA 2 · STRUTTURA 3</div>'
         '</div>',
@@ -1205,7 +1210,7 @@ def sezione_backup():
                 f"Repo letto dai Secrets: **{repo}** · branch **{branch}** · "
                 f"token: inizia con `{tok[:11]}…`, lunghezza {len(tok)} caratteri."
             )
-            if st.button("▶️  Prova connessione a GitHub"):
+            if st.button("▶️  Verifica connessione a GitHub"):
                 try:
                     r = requests.get(
                         f"https://api.github.com/repos/{repo}",
@@ -1376,23 +1381,25 @@ def selettore_giorno():
 
 
 def password_configurata():
-    """Restituisce la password corretta letta dai Secrets di Streamlit (chiave
-    "password") o dalla variabile d'ambiente APP_PASSWORD. None se non impostata.
-    In questo modo la password NON è scritta nel codice."""
+    """Restituisce la password di accesso corretta, in ordine di PRECEDENZA:
+      1) Secret di Streamlit alla chiave "password";
+      2) variabile d'ambiente APP_PASSWORD (utile in locale);
+      3) DEFAULT_PASSWORD (password demo iniziale del template).
+    Configurando il Secret si sovrascrive la demo senza toccare il codice."""
     try:
         pwd = st.secrets.get("password")
         if pwd:
             return str(pwd)
     except Exception:
         pass
-    return os.environ.get("APP_PASSWORD")
+    return os.environ.get("APP_PASSWORD") or DEFAULT_PASSWORD
 
 
 def _token(pwd):
     """Token (non reversibile) derivato dalla password: viene messo nell'URL per
     mantenere l'accesso attraverso i ricaricamenti di pagina e i riavvii dei
     server di Streamlit, senza esporre la password."""
-    return hashlib.sha256(("rossihotels::" + str(pwd)).encode()).hexdigest()[:20]
+    return hashlib.sha256(("hotelapp::" + str(pwd)).encode()).hexdigest()[:20]
 
 
 def _auth_qs():
@@ -1463,7 +1470,7 @@ def main():
 
     # --- Sidebar: tasto Logout (chiede di nuovo la password) ---
     with st.sidebar:
-        st.markdown("**ROSSI HOTEL'S**")
+        st.markdown("**TUO NOME HOTEL / B&B**")
         if st.button("🚪  Logout"):
             st.session_state.autenticato = False
             st.session_state.pop("auth_token", None)
