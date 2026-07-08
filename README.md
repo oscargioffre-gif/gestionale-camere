@@ -125,8 +125,14 @@ esempio per verificare che venga salvata.
 
 Tutte le modifiche si fanno in `app.py`:
 
-- **Nome visualizzato** (`TUO NOME HOTEL / B&B`): cerca `TUO NOME` e sostituiscilo
-  nell'intestazione, nel `page_title` e nella sidebar con il nome del cliente.
+- **Nome visualizzato** (`TUO NOME HOTEL / B&B`): cambia la costante `BRAND_NAME`
+  in cima ad `app.py`. Aggiorna in automatico scheda browser, sidebar e testo
+  della **filigrana** di sfondo. Il grande titolo colorato in intestazione va
+  aggiornato a parte (cerca `TUO NOME` nel blocco della testata).
+- **Filigrana di sfondo** (testo del brand in diagonale + pois blu su bianco): è
+  generata via CSS, sempre presente dietro ogni sezione. Per renderla più o meno
+  marcata regola i valori `fill-opacity` / `opacity` nella funzione
+  `_filigrana_uris()`.
 - **Nomi delle strutture** (`STRUTTURA 1/2/3`) e **icone** (🏨 🏢 🏡): nel
   dizionario `HOTELS`.
 - **Camere**: sempre nel dizionario `HOTELS`, campo `rooms` (numero e tipo di

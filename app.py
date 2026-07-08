@@ -26,6 +26,10 @@ import streamlit as st
 ICON_PATH = os.path.join("assets", "icon-192.png")
 _page_icon = ICON_PATH if os.path.exists(ICON_PATH) else "🏨"
 
+# Nome visualizzato del brand (intestazione, scheda browser e filigrana di sfondo).
+# È il punto unico da cambiare per il rebranding del template su un nuovo cliente.
+BRAND_NAME = "TUO NOME HOTEL / B&B"
+
 # =============================================================================
 # 1. CONFIGURAZIONE PAGINA
 # =============================================================================
@@ -33,7 +37,7 @@ _page_icon = ICON_PATH if os.path.exists(ICON_PATH) else "🏨"
 # "centered" è la scelta migliore per il mobile: limita la larghezza dei
 # contenuti rendendoli pieni-schermo su iPhone ed eleganti su desktop.
 st.set_page_config(
-    page_title="TUO NOME HOTEL / B&B",
+    page_title=BRAND_NAME,
     page_icon=_page_icon,
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -146,6 +150,45 @@ def _watermark_uri():
         return ""
 
 
+def _svg_data_uri(svg):
+    """Converte una stringa SVG in data URI base64, usabile come background-image."""
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode("utf-8")).decode()
+
+
+@st.cache_data(show_spinner=False)
+def _filigrana_uris(brand):
+    """Genera al volo (senza file esterni) le due 'tessere' SVG della filigrana:
+      1) il TESTO del brand ripetuto in diagonale, blu navy molto tenue;
+      2) i POIS (pallini) blu di tre misure che tappezzano lo sfondo.
+    Entrambe si ripetono su tutta la pagina (tile). I valori di fill-opacity qui
+    sotto regolano quanto è marcata la filigrana: alzali/abbassali per gusto.
+    Restituisce la coppia (uri_testo, uri_pois)."""
+    testo = str(brand).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    # Tessera TESTO: 420x230, brand centrato e ruotato di -20°.
+    svg_testo = (
+        "<svg xmlns='http://www.w3.org/2000/svg' width='420' height='230' viewBox='0 0 420 230'>"
+        "<text x='210' y='115' transform='rotate(-20 210 115)' text-anchor='middle' "
+        "dominant-baseline='middle' font-family='Sora, Inter, Arial, sans-serif' "
+        "font-size='22' font-weight='700' letter-spacing='1.5' "
+        "fill='#123A5E' fill-opacity='0.085'>" + testo + "</text></svg>"
+    )
+
+    # Tessera POIS: 76x76, pallini blu di tre misure disposti per ripetersi senza
+    # cuciture (angoli + centri dei lati + centro).
+    svg_pois = (
+        "<svg xmlns='http://www.w3.org/2000/svg' width='76' height='76' viewBox='0 0 76 76'>"
+        "<g fill='#1F6DB0'>"
+        "<circle cx='0' cy='0' r='3.6' opacity='0.14'/><circle cx='76' cy='0' r='3.6' opacity='0.14'/>"
+        "<circle cx='0' cy='76' r='3.6' opacity='0.14'/><circle cx='76' cy='76' r='3.6' opacity='0.14'/>"
+        "<circle cx='38' cy='38' r='5.4' opacity='0.11'/>"
+        "<circle cx='38' cy='0' r='2.5' opacity='0.10'/><circle cx='38' cy='76' r='2.5' opacity='0.10'/>"
+        "<circle cx='0' cy='38' r='2.5' opacity='0.10'/><circle cx='76' cy='38' r='2.5' opacity='0.10'/>"
+        "</g></svg>"
+    )
+    return _svg_data_uri(svg_testo), _svg_data_uri(svg_pois)
+
+
 def inietta_css():
     """Inietta il foglio di stile globale (font, palette, griglia, card).
 
@@ -175,7 +218,7 @@ def inietta_css():
 /* Sfondo, font e COLORE testo impostati sul container: leggibilità garantita
    anche se il tema non si carica (niente testo bianco su bianco). */
 [data-testid="stAppViewContainer"]{
-  background:linear-gradient(165deg,#F5F8FC 0%,#EEF2F7 55%,#E7EDF4 100%);
+  background:#ffffff;
   color:var(--ink);
   font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 }
@@ -366,19 +409,34 @@ div[data-testid="stForm"]{ border:1px solid var(--line); border-radius:14px; bac
 """
     st.markdown(css, unsafe_allow_html=True)
 
-    # --- Filigrana (logo del cliente, opzionale) tenue ed elegante, dietro ogni sezione ---
-    wm = _watermark_uri()
-    if wm:
-        st.markdown(
-            f'<style>'
-            f'[data-testid="stAppViewContainer"]::before{{'
-            f'content:""; position:fixed; inset:0; z-index:0; pointer-events:none;'
-            f'background-image:url("{wm}"); background-repeat:no-repeat;'
-            f'background-position:center 46%; background-size:min(520px,74vw); opacity:.06;}}'
-            f'[data-testid="stAppViewContainer"] .block-container{{ position:relative; z-index:1; }}'
-            f'</style>',
-            unsafe_allow_html=True,
-        )
+    # --- FILIGRANA di sfondo, SEMPRE presente e dietro OGNI sezione ------------
+    # Uno strato fisso (position:fixed) ancorato alla finestra: resta visibile
+    # mentre si scorre e sotto tutte le sezioni (griglie, form, camere, storico…),
+    # così la si vede ovunque. È composta da due tessere SVG ripetute su tutta la
+    # pagina: il TESTO del brand in diagonale + i POIS blu. Nessun file esterno.
+    # Se il cliente carica assets/watermark.png, quel logo viene aggiunto al centro.
+    uri_testo, uri_pois = _filigrana_uris(BRAND_NAME)
+    wm = _watermark_uri()   # logo PNG opzionale del cliente
+
+    imgs = ([f'url("{wm}")'] if wm else []) + [f'url("{uri_testo}")', f'url("{uri_pois}")']
+    reps = (["no-repeat"] if wm else []) + ["repeat", "repeat"]
+    poss = (["center 46%"] if wm else []) + ["center", "center"]
+    sizes = (["min(480px,70vw)"] if wm else []) + ["420px 230px", "76px 76px"]
+
+    st.markdown(
+        "<style>"
+        '[data-testid="stAppViewContainer"]::before{'
+        'content:""; position:fixed; inset:0; z-index:0; pointer-events:none;'
+        f'background-image:{", ".join(imgs)};'
+        f'background-repeat:{", ".join(reps)};'
+        f'background-position:{", ".join(poss)};'
+        f'background-size:{", ".join(sizes)};'
+        "}"
+        # I contenuti (block-container) restano SOPRA la filigrana.
+        '[data-testid="stAppViewContainer"] .block-container{ position:relative; z-index:1; }'
+        "</style>",
+        unsafe_allow_html=True,
+    )
 
 
 # =============================================================================
@@ -1470,7 +1528,7 @@ def main():
 
     # --- Sidebar: tasto Logout (chiede di nuovo la password) ---
     with st.sidebar:
-        st.markdown("**TUO NOME HOTEL / B&B**")
+        st.markdown(f"**{BRAND_NAME}**")
         if st.button("🚪  Logout"):
             st.session_state.autenticato = False
             st.session_state.pop("auth_token", None)
