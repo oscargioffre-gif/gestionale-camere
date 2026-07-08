@@ -159,10 +159,11 @@ def _svg_data_uri(svg):
 def _filigrana_uris(brand):
     """Genera al volo (senza file esterni) le due 'tessere' SVG della filigrana:
       1) il TESTO del brand ripetuto in diagonale, blu navy molto tenue;
-      2) i POIS (pallini) blu di tre misure che tappezzano lo sfondo.
-    Entrambe si ripetono su tutta la pagina (tile). I valori di fill-opacity qui
-    sotto regolano quanto è marcata la filigrana: alzali/abbassali per gusto.
-    Restituisce la coppia (uri_testo, uri_pois)."""
+      2) un MOTIVO alberghiero — un campanello da reception disegnato a tratto
+         sottile, disposto sfalsato (half-drop) come una raffinata carta da parati.
+    Entrambe si ripetono su tutta la pagina (tile). I valori di opacity/fill-opacity
+    qui sotto regolano quanto è marcata la filigrana: alzali/abbassali per gusto.
+    Restituisce la coppia (uri_testo, uri_motivo)."""
     testo = str(brand).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
     # Tessera TESTO: 420x230, brand centrato e ruotato di -20°.
@@ -174,19 +175,25 @@ def _filigrana_uris(brand):
         "fill='#123A5E' fill-opacity='0.085'>" + testo + "</text></svg>"
     )
 
-    # Tessera POIS: 76x76, pallini blu di tre misure disposti per ripetersi senza
-    # cuciture (angoli + centri dei lati + centro).
-    svg_pois = (
-        "<svg xmlns='http://www.w3.org/2000/svg' width='76' height='76' viewBox='0 0 76 76'>"
-        "<g fill='#1F6DB0'>"
-        "<circle cx='0' cy='0' r='3.6' opacity='0.14'/><circle cx='76' cy='0' r='3.6' opacity='0.14'/>"
-        "<circle cx='0' cy='76' r='3.6' opacity='0.14'/><circle cx='76' cy='76' r='3.6' opacity='0.14'/>"
-        "<circle cx='38' cy='38' r='5.4' opacity='0.11'/>"
-        "<circle cx='38' cy='0' r='2.5' opacity='0.10'/><circle cx='38' cy='76' r='2.5' opacity='0.10'/>"
-        "<circle cx='0' cy='38' r='2.5' opacity='0.10'/><circle cx='76' cy='38' r='2.5' opacity='0.10'/>"
+    # Tessera MOTIVO: campanello da reception (line-art) ripetuto in half-drop.
+    # Il campanello è disegnato una volta (_bell) e posizionato due volte, sfalsato,
+    # dentro una tessera 150x150 che si ripete senza cuciture (non tocca i bordi).
+    _bell = (
+        "<path d='M2 34 A18 18 0 0 1 38 34'/>"      # cupola del campanello
+        "<line x1='-2' y1='34' x2='42' y2='34'/>"   # piano d'appoggio
+        "<line x1='4' y1='38' x2='36' y2='38'/>"    # base
+        "<line x1='20' y1='16' x2='20' y2='11'/>"   # stelo del pulsante
+        "<circle cx='20' cy='9' r='2'/>"            # pulsante superiore
+    )
+    svg_motivo = (
+        "<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'>"
+        "<g fill='none' stroke='#16456E' stroke-width='1.7' stroke-linecap='round' "
+        "stroke-linejoin='round' opacity='0.15'>"
+        "<g transform='translate(17,26)'>" + _bell + "</g>"
+        "<g transform='translate(92,101)'>" + _bell + "</g>"
         "</g></svg>"
     )
-    return _svg_data_uri(svg_testo), _svg_data_uri(svg_pois)
+    return _svg_data_uri(svg_testo), _svg_data_uri(svg_motivo)
 
 
 def inietta_css():
@@ -413,15 +420,16 @@ div[data-testid="stForm"]{ border:1px solid var(--line); border-radius:14px; bac
     # Uno strato fisso (position:fixed) ancorato alla finestra: resta visibile
     # mentre si scorre e sotto tutte le sezioni (griglie, form, camere, storico…),
     # così la si vede ovunque. È composta da due tessere SVG ripetute su tutta la
-    # pagina: il TESTO del brand in diagonale + i POIS blu. Nessun file esterno.
+    # pagina: il TESTO del brand in diagonale + un MOTIVO alberghiero (campanello
+    # da reception, line-art). Nessun file esterno.
     # Se il cliente carica assets/watermark.png, quel logo viene aggiunto al centro.
-    uri_testo, uri_pois = _filigrana_uris(BRAND_NAME)
+    uri_testo, uri_motivo = _filigrana_uris(BRAND_NAME)
     wm = _watermark_uri()   # logo PNG opzionale del cliente
 
-    imgs = ([f'url("{wm}")'] if wm else []) + [f'url("{uri_testo}")', f'url("{uri_pois}")']
+    imgs = ([f'url("{wm}")'] if wm else []) + [f'url("{uri_testo}")', f'url("{uri_motivo}")']
     reps = (["no-repeat"] if wm else []) + ["repeat", "repeat"]
     poss = (["center 46%"] if wm else []) + ["center", "center"]
-    sizes = (["min(480px,70vw)"] if wm else []) + ["420px 230px", "76px 76px"]
+    sizes = (["min(480px,70vw)"] if wm else []) + ["420px 230px", "150px 150px"]
 
     st.markdown(
         "<style>"
